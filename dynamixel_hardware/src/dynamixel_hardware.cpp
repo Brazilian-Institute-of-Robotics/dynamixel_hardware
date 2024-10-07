@@ -102,7 +102,7 @@ CallbackReturn DynamixelHardware::on_init(const hardware_interface::HardwareInfo
   }
 
   enable_torque(false);
-  set_control_mode(ControlMode::Position, true);
+  set_control_mode(ControlMode::ExtendedPosition, true);
   set_joint_params();
   enable_torque(true);
 
@@ -326,7 +326,7 @@ return_type DynamixelHardware::write(
         return j.command.position != j.prev_command.position;
       }))
   {
-    set_control_mode(ControlMode::Position);
+    set_control_mode(ControlMode::ExtendedPosition);
     if (mode_changed_) {
       set_joint_params();
     }
@@ -349,7 +349,7 @@ return_type DynamixelHardware::write(
       set_joint_velocities();
       return return_type::OK;
       break;
-    case ControlMode::Position:
+    case ControlMode::ExtendedPosition:
       set_joint_positions();
       return return_type::OK;
       break;
@@ -416,7 +416,7 @@ return_type DynamixelHardware::set_control_mode(const ControlMode & mode, const 
     return return_type::OK;
   }
 
-  if (mode == ControlMode::Position && (force_set || control_mode_ != ControlMode::Position)) {
+  if (mode == ControlMode::ExtendedPosition && (force_set || control_mode_ != ControlMode::ExtendedPosition)) {
     bool torque_enabled = torque_enabled_;
     if (torque_enabled) {
       enable_torque(false);
@@ -428,10 +428,10 @@ return_type DynamixelHardware::set_control_mode(const ControlMode & mode, const 
         return return_type::ERROR;
       }
     }
-    RCLCPP_INFO(rclcpp::get_logger(kDynamixelHardware), "Position control");
-    if (control_mode_ != ControlMode::Position) {
+    RCLCPP_INFO(rclcpp::get_logger(kDynamixelHardware), "ExtendedPosition control");
+    if (control_mode_ != ControlMode::ExtendedPosition) {
       mode_changed_ = true;
-      control_mode_ = ControlMode::Position;
+      control_mode_ = ControlMode::ExtendedPosition;
     }
 
     if (torque_enabled) {
@@ -440,7 +440,7 @@ return_type DynamixelHardware::set_control_mode(const ControlMode & mode, const 
     return return_type::OK;
   }
 
-  if (control_mode_ != ControlMode::Velocity && control_mode_ != ControlMode::Position) {
+  if (control_mode_ != ControlMode::Velocity && control_mode_ != ControlMode::ExtendedPosition) {
     RCLCPP_FATAL(
       rclcpp::get_logger(kDynamixelHardware), "Only position/velocity control are implemented");
     return return_type::ERROR;
