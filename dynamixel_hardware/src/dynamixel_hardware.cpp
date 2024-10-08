@@ -423,7 +423,7 @@ return_type DynamixelHardware::set_control_mode(const ControlMode & mode, const 
     }
 
     for (uint i = 0; i < joint_ids_.size(); ++i) {
-      if (!dynamixel_workbench_.setPositionControlMode(joint_ids_[i], &log)) {
+      if (!dynamixel_workbench_.setExtendedPositionControlMode(joint_ids_[i], &log)) {
         RCLCPP_FATAL(rclcpp::get_logger(kDynamixelHardware), "%s", log);
         return return_type::ERROR;
       }
