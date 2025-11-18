@@ -104,11 +104,6 @@ private:
   ControlMode control_mode_{ControlMode::Position};
   bool mode_changed_{false};
   bool use_dummy_{false};
-  constexpr const char* kWatchdogItemName = "Bus_Watchdog";
-  constexpr int kWatchdogRegisterUnitMs = 20;
-  constexpr int kWatchdogMinValue = 0;
-  constexpr int kWatchdogMaxValue = 127;
-  constexpr int kWatchdogDefaultMs = 1000;
 };
 }  // namespace dynamixel_hardware
 

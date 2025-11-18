@@ -47,6 +47,11 @@ constexpr const char * const kExtraJointParameters[] = {
   "Velocity_P_Gain",
   "Velocity_I_Gain",
 };
+constexpr const char* kWatchdogItemName = "Bus_Watchdog";
+constexpr int kWatchdogRegisterUnitMs = 20;
+constexpr int kWatchdogMinValue = 0;
+constexpr int kWatchdogMaxValue = 127;
+constexpr int kWatchdogDefaultMs = 1000;
 
 CallbackReturn DynamixelHardware::on_init(const hardware_interface::HardwareInfo & info)
 {
