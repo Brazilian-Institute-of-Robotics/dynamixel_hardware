@@ -109,64 +109,7 @@ CallbackReturn DynamixelHardware::on_init(const hardware_interface::HardwareInfo
   enable_torque(false);
   set_control_mode(ControlMode::ExtendedPosition, true);
   set_joint_params();
-
-  for (size_t i = 0; i < info_.joints.size(); ++i)
-  {
-    const hardware_interface::ComponentInfo& joint = info_.joints[i];
-    const int id = joint_ids_[i];
-    const char* log = nullptr;
-
-    int watchdog_ms = kWatchdogDefaultMs;
-    const auto param_it = joint.parameters.find("bus_watchdog");
-    if (param_it != joint.parameters.end())
-    {
-      watchdog_ms = std::stoi(param_it->second);
-    }
-
-    int watchdog_value = std::clamp(
-      watchdog_ms / kWatchdogRegisterUnitMs,
-      kWatchdogMinValue,
-      kWatchdogMaxValue
-    );
-
-    bool write_ok = dynamixel_workbench_.itemWrite(id, kWatchdogItemName, watchdog_value, &log);
-    if (!write_ok)
-    {
-      RCLCPP_WARN(
-        rclcpp::get_logger(kDynamixelHardware),
-        "Failed to set %s for joint %d (requested: %d ms → reg %d): %s",
-        kWatchdogItemName, id, watchdog_ms, watchdog_value, log
-      );
-    }
-    else
-    {
-      RCLCPP_INFO(
-        rclcpp::get_logger(kDynamixelHardware),
-        "%s configured for joint %d: %d ms (register value: %d)",
-        kWatchdogItemName, id, watchdog_value * kWatchdogRegisterUnitMs, watchdog_value
-      );
-    }
-
-    int32_t read_val = 0;
-    bool read_ok = dynamixel_workbench_.itemRead(id, kWatchdogItemName, &read_val, &log);
-    if (read_ok)
-    {
-      RCLCPP_INFO(
-        rclcpp::get_logger(kDynamixelHardware),
-        "Confirmed %s for joint %d: %d (≈ %d ms)",
-        kWatchdogItemName, id, read_val, read_val * kWatchdogRegisterUnitMs
-      );
-    }
-    else
-    {
-      RCLCPP_WARN(
-        rclcpp::get_logger(kDynamixelHardware),
-        "Could not read back %s for joint %d: %s",
-        kWatchdogItemName, id, log
-      );
-    }
-  }
-
+  enable_watchdog();
   enable_torque(true);
 
   const ControlItem * goal_position =
@@ -241,6 +184,66 @@ CallbackReturn DynamixelHardware::on_init(const hardware_interface::HardwareInfo
   }
 
   return CallbackReturn::SUCCESS;
+}
+
+void DynamixelHardware::enable_watchdog()
+{
+  for (size_t i = 0; i < info_.joints.size(); ++i)
+  {
+    const hardware_interface::ComponentInfo& joint = info_.joints[i];
+    const int id = joint_ids_[i];
+    const char* log = nullptr;
+
+    int watchdog_ms = kWatchdogDefaultMs;
+    const auto param_it = joint.parameters.find("bus_watchdog");
+    if (param_it != joint.parameters.end())
+    {
+      watchdog_ms = std::stoi(param_it->second);
+    }
+
+    int watchdog_value = std::clamp(
+      watchdog_ms / kWatchdogRegisterUnitMs,
+      kWatchdogMinValue,
+      kWatchdogMaxValue
+    );
+
+    bool write_ok = dynamixel_workbench_.itemWrite(id, kWatchdogItemName, watchdog_value, &log);
+    if (!write_ok)
+    {
+      RCLCPP_WARN(
+        rclcpp::get_logger(kDynamixelHardware),
+        "Failed to set %s for joint %d (requested: %d ms → reg %d): %s",
+        kWatchdogItemName, id, watchdog_ms, watchdog_value, log
+      );
+    }
+    else
+    {
+      RCLCPP_INFO(
+        rclcpp::get_logger(kDynamixelHardware),
+        "%s configured for joint %d: %d ms (register value: %d)",
+        kWatchdogItemName, id, watchdog_value * kWatchdogRegisterUnitMs, watchdog_value
+      );
+    }
+
+    int32_t read_val = 0;
+    bool read_ok = dynamixel_workbench_.itemRead(id, kWatchdogItemName, &read_val, &log);
+    if (read_ok)
+    {
+      RCLCPP_INFO(
+        rclcpp::get_logger(kDynamixelHardware),
+        "Confirmed %s for joint %d: %d (≈ %d ms)",
+        kWatchdogItemName, id, read_val, read_val * kWatchdogRegisterUnitMs
+      );
+    }
+    else
+    {
+      RCLCPP_WARN(
+        rclcpp::get_logger(kDynamixelHardware),
+        "Could not read back %s for joint %d: %s",
+        kWatchdogItemName, id, log
+      );
+    }
+  }
 }
 
 std::vector<hardware_interface::StateInterface> DynamixelHardware::export_state_interfaces()
