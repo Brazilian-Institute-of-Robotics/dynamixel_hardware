@@ -88,6 +88,7 @@ index c6cdb74..111846d 100644
 @@ -9,7 +9,7 @@
          <param name="usb_port">/dev/ttyUSB0</param>
          <param name="baud_rate">1000000</param>
+         <param name="Bus_Watchdog">500</param> <!-- Range: [0, 2540]ms, Default = 500ms -->
 -        <!-- <param name="use_dummy">true</param> -->
 +        <param name="use_dummy">true</param>
        </hardware>

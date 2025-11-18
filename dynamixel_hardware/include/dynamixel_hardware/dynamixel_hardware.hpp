@@ -68,6 +68,9 @@ public:
   CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override;
 
   DYNAMIXEL_HARDWARE_PUBLIC
+  void enable_watchdog();
+
+  DYNAMIXEL_HARDWARE_PUBLIC
   std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
 
   DYNAMIXEL_HARDWARE_PUBLIC
