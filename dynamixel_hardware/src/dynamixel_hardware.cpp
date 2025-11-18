@@ -190,9 +190,9 @@ void DynamixelHardware::enable_watchdog()
 {
   for (size_t i = 0; i < info_.joints.size(); ++i)
   {
-    const hardware_interface::ComponentInfo& joint = info_.joints[i];
+    const hardware_interface::ComponentInfo & joint = info_.joints[i];
     const int id = joint_ids_[i];
-    const char* log = nullptr;
+    const char * log = nullptr;
 
     int watchdog_ms = kWatchdogDefaultMs;
     const auto param_it = joint.parameters.find("bus_watchdog");
