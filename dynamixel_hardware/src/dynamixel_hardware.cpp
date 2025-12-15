@@ -302,6 +302,7 @@ CallbackReturn DynamixelHardware::on_deactivate(
   const rclcpp_lifecycle::State & /* previous_state */)
 {
   RCLCPP_DEBUG(rclcpp::get_logger(kDynamixelHardware), "stop");
+  enable_torque(false);
   return CallbackReturn::SUCCESS;
 }
 
