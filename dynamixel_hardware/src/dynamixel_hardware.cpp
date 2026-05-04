@@ -318,7 +318,7 @@ return_type DynamixelHardware::read(
       kPresentPositionVelocityCurrentIndex, ids.data(), ids.size(), &log))
   {
     RCLCPP_ERROR(rclcpp::get_logger(kDynamixelHardware), "%s", log);
-    return_type::ERROR;
+    return return_type::ERROR;
 
   }
 
@@ -328,7 +328,7 @@ return_type DynamixelHardware::read(
       control_items_[kPresentCurrentItem]->data_length, currents.data(), &log))
   {
     RCLCPP_ERROR(rclcpp::get_logger(kDynamixelHardware), "%s", log);
-    return_type::ERROR;
+    return return_type::ERROR;
   }
 
   if (!dynamixel_workbench_.getSyncReadData(
@@ -337,7 +337,7 @@ return_type DynamixelHardware::read(
       control_items_[kPresentVelocityItem]->data_length, velocities.data(), &log))
   {
     RCLCPP_ERROR(rclcpp::get_logger(kDynamixelHardware), "%s", log);
-    return_type::ERROR;
+    return return_type::ERROR;
   }
 
   if (!dynamixel_workbench_.getSyncReadData(
@@ -346,7 +346,7 @@ return_type DynamixelHardware::read(
       control_items_[kPresentPositionItem]->data_length, positions.data(), &log))
   {
     RCLCPP_ERROR(rclcpp::get_logger(kDynamixelHardware), "%s", log);
-    return_type::ERROR;
+    return return_type::ERROR;
   }
 
   for (uint i = 0; i < ids.size(); i++) {
