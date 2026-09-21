@@ -45,6 +45,7 @@ struct Joint
   JointValue state{};
   JointValue command{};
   JointValue prev_command{};
+  double reboot_command{0.0};
 };
 
 enum class ControlMode
