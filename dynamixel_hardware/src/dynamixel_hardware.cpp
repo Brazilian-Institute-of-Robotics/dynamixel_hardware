@@ -30,6 +30,7 @@ constexpr const char * kDynamixelHardware = "DynamixelHardware";
 constexpr uint8_t kGoalPositionIndex = 0;
 constexpr uint8_t kGoalVelocityIndex = 1;
 constexpr uint8_t kPresentPositionVelocityCurrentIndex = 0;
+constexpr const char * kRebootInterface = "reboot";
 constexpr const char * kGoalPositionItem = "Goal_Position";
 constexpr const char * kGoalVelocityItem = "Goal_Velocity";
 constexpr const char * kMovingSpeedItem = "Moving_Speed";
@@ -62,19 +63,26 @@ CallbackReturn DynamixelHardware::on_init(const hardware_interface::HardwareInfo
 
   joints_.resize(info_.joints.size(), Joint());
   joint_ids_.resize(info_.joints.size(), 0);
+  
 
   for (uint i = 0; i < info_.joints.size(); i++) {
     joint_ids_[i] = std::stoi(info_.joints[i].parameters.at("id"));
+
     joints_[i].state.position = std::numeric_limits<double>::quiet_NaN();
     joints_[i].state.velocity = std::numeric_limits<double>::quiet_NaN();
     joints_[i].state.effort = std::numeric_limits<double>::quiet_NaN();
+
     joints_[i].command.position = std::numeric_limits<double>::quiet_NaN();
     joints_[i].command.velocity = std::numeric_limits<double>::quiet_NaN();
     joints_[i].command.effort = std::numeric_limits<double>::quiet_NaN();
+
     joints_[i].prev_command.position = joints_[i].command.position;
     joints_[i].prev_command.velocity = joints_[i].command.velocity;
     joints_[i].prev_command.effort = joints_[i].command.effort;
-    RCLCPP_INFO(rclcpp::get_logger(kDynamixelHardware), "joint_id %d: %d", i, joint_ids_[i]);
+
+    joints_[i].reboot_command = 0.0;
+
+    RCLCPP_INFO(...);
   }
 
   if (
@@ -246,6 +254,70 @@ void DynamixelHardware::enable_watchdog()
   }
 }
 
+return_type DynamixelHardware::reboot(const uint8_t id)
+{
+  if (use_dummy_) {
+    return return_type::OK;
+  }
+
+  if (std::find(joint_ids_.begin(), joint_ids_.end(), id) == joint_ids_.end()) {
+    RCLCPP_ERROR(
+      rclcpp::get_logger(kDynamixelHardware),
+      "Dynamixel ID %u is not configured",
+      id);
+    return return_type::ERROR;
+  }
+
+  const char * log = nullptr;
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(kDynamixelHardware),
+    "Rebooting Dynamixel ID %u",
+    id);
+
+  if (!dynamixel_workbench_.reboot(id, &log)) {
+    RCLCPP_ERROR(
+      rclcpp::get_logger(kDynamixelHardware),
+      "Failed to reboot Dynamixel ID %u: %s",
+      id,
+      log != nullptr ? log : "unknown error");
+    return return_type::ERROR;
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(kDynamixelHardware),
+    "Dynamixel ID %u rebooted successfully",
+    id);
+
+  return return_type::OK;
+}
+
+return_type DynamixelHardware::reboot_all()
+{
+  if (use_dummy_) {
+    return return_type::OK;
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(kDynamixelHardware),
+    "Rebooting all configured Dynamixels");
+
+  for (const auto id : joint_ids_) {
+    if (reboot(id) != return_type::OK) {
+      RCLCPP_ERROR(
+        rclcpp::get_logger(kDynamixelHardware),
+        "Failed to reboot all Dynamixels");
+      return return_type::ERROR;
+    }
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(kDynamixelHardware),
+    "All Dynamixels rebooted successfully");
+
+  return return_type::OK;
+}
+
 std::vector<hardware_interface::StateInterface> DynamixelHardware::export_state_interfaces()
 {
   RCLCPP_DEBUG(rclcpp::get_logger(kDynamixelHardware), "export_state_interfaces");
@@ -269,13 +341,25 @@ std::vector<hardware_interface::CommandInterface> DynamixelHardware::export_comm
 {
   RCLCPP_DEBUG(rclcpp::get_logger(kDynamixelHardware), "export_command_interfaces");
   std::vector<hardware_interface::CommandInterface> command_interfaces;
+
   for (uint i = 0; i < info_.joints.size(); i++) {
     command_interfaces.emplace_back(
       hardware_interface::CommandInterface(
-        info_.joints[i].name, hardware_interface::HW_IF_POSITION, &joints_[i].command.position));
+        info_.joints[i].name,
+        hardware_interface::HW_IF_POSITION,
+        &joints_[i].command.position));
+
     command_interfaces.emplace_back(
       hardware_interface::CommandInterface(
-        info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, &joints_[i].command.velocity));
+        info_.joints[i].name,
+        hardware_interface::HW_IF_VELOCITY,
+        &joints_[i].command.velocity));
+
+    command_interfaces.emplace_back(
+      hardware_interface::CommandInterface(
+        info_.joints[i].name,
+        kRebootInterface,
+        &joints_[i].reboot_command));
   }
 
   return command_interfaces;
@@ -370,6 +454,18 @@ return_type DynamixelHardware::write(
       joint.state.position = joint.command.position;
     }
     return return_type::OK;
+  }
+
+  // Reboot command
+
+  for (uint i = 0; i < joints_.size(); ++i) {
+    if (joints_[i].reboot_command > 0.5) {
+      joints_[i].reboot_command = 0.0;
+      if (reboot(joint_ids_[i]) != return_type::OK) {
+        return return_type::ERROR;
+      }
+      return return_type::OK;
+    }
   }
 
   // Velocity control

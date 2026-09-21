@@ -45,6 +45,7 @@ struct Joint
   JointValue state{};
   JointValue command{};
   JointValue prev_command{};
+  double reboot_command{0.0};
 };
 
 enum class ControlMode
@@ -69,6 +70,12 @@ public:
 
   DYNAMIXEL_HARDWARE_PUBLIC
   void enable_watchdog();
+
+  DYNAMIXEL_HARDWARE_PUBLIC
+  return_type reboot(const uint8_t id);
+
+  DYNAMIXEL_HARDWARE_PUBLIC
+  return_type reboot_all();
 
   DYNAMIXEL_HARDWARE_PUBLIC
   std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
