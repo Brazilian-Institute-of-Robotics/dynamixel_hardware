@@ -246,6 +246,70 @@ void DynamixelHardware::enable_watchdog()
   }
 }
 
+return_type DynamixelHardware::reboot(const uint8_t id)
+{
+  if (use_dummy_) {
+    return return_type::OK;
+  }
+
+  if (std::find(joint_ids_.begin(), joint_ids_.end(), id) == joint_ids_.end()) {
+    RCLCPP_ERROR(
+      rclcpp::get_logger(kDynamixelHardware),
+      "Dynamixel ID %u is not configured",
+      id);
+    return return_type::ERROR;
+  }
+
+  const char * log = nullptr;
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(kDynamixelHardware),
+    "Rebooting Dynamixel ID %u",
+    id);
+
+  if (!dynamixel_workbench_.reboot(id, &log)) {
+    RCLCPP_ERROR(
+      rclcpp::get_logger(kDynamixelHardware),
+      "Failed to reboot Dynamixel ID %u: %s",
+      id,
+      log != nullptr ? log : "unknown error");
+    return return_type::ERROR;
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(kDynamixelHardware),
+    "Dynamixel ID %u rebooted successfully",
+    id);
+
+  return return_type::OK;
+}
+
+return_type DynamixelHardware::reboot_all()
+{
+  if (use_dummy_) {
+    return return_type::OK;
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(kDynamixelHardware),
+    "Rebooting all configured Dynamixels");
+
+  for (const auto id : joint_ids_) {
+    if (reboot(id) != return_type::OK) {
+      RCLCPP_ERROR(
+        rclcpp::get_logger(kDynamixelHardware),
+        "Failed to reboot all Dynamixels");
+      return return_type::ERROR;
+    }
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(kDynamixelHardware),
+    "All Dynamixels rebooted successfully");
+
+  return return_type::OK;
+}
+
 std::vector<hardware_interface::StateInterface> DynamixelHardware::export_state_interfaces()
 {
   RCLCPP_DEBUG(rclcpp::get_logger(kDynamixelHardware), "export_state_interfaces");

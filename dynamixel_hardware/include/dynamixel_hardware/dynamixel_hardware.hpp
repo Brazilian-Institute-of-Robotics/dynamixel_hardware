@@ -71,6 +71,12 @@ public:
   void enable_watchdog();
 
   DYNAMIXEL_HARDWARE_PUBLIC
+  return_type reboot(const uint8_t id);
+
+  DYNAMIXEL_HARDWARE_PUBLIC
+  return_type reboot_all();
+
+  DYNAMIXEL_HARDWARE_PUBLIC
   std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
 
   DYNAMIXEL_HARDWARE_PUBLIC
