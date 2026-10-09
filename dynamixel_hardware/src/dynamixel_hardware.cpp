@@ -63,6 +63,7 @@ CallbackReturn DynamixelHardware::on_init(const hardware_interface::HardwareInfo
 
   joints_.resize(info_.joints.size(), Joint());
   joint_ids_.resize(info_.joints.size(), 0);
+  reboot_command_active_.resize(info_.joints.size(), false);
   
 
   for (uint i = 0; i < info_.joints.size(); i++) {
@@ -459,7 +460,13 @@ return_type DynamixelHardware::write(
   // Reboot command
 
   for (uint i = 0; i < joints_.size(); ++i) {
-    if (joints_[i].reboot_command > 0.5) {
+    if (joints_[i].reboot_command <= 0.5) {
+      reboot_command_active_[i] = false;
+      continue;
+    }
+
+    if (!reboot_command_active_[i]) {
+      reboot_command_active_[i] = true;
       joints_[i].reboot_command = 0.0;
       if (reboot(joint_ids_[i]) != return_type::OK) {
         return return_type::ERROR;
