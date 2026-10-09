@@ -460,7 +460,7 @@ return_type DynamixelHardware::write(
   // Reboot command
 
   for (uint i = 0; i < joints_.size(); ++i) {
-    if (joints_[i].reboot_command <= 0.5) {
+    if (!(joints_[i].reboot_command > 0.5)) {
       reboot_command_active_[i] = false;
       continue;
     }
