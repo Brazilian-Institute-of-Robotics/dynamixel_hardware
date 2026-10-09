@@ -48,7 +48,7 @@ constexpr const char * const kExtraJointParameters[] = {
   "Velocity_P_Gain",
   "Velocity_I_Gain",
 };
-constexpr const char* kWatchdogItemName = "Bus_Watchdog";
+constexpr const char * kWatchdogItemName = "Bus_Watchdog";
 constexpr int kWatchdogRegisterUnitMs = 20;
 constexpr int kWatchdogMinValue = 0;
 constexpr int kWatchdogMaxValue = 127;
@@ -64,7 +64,7 @@ CallbackReturn DynamixelHardware::on_init(const hardware_interface::HardwareInfo
   joints_.resize(info_.joints.size(), Joint());
   joint_ids_.resize(info_.joints.size(), 0);
   reboot_command_active_.resize(info_.joints.size(), false);
-  
+
 
   for (uint i = 0; i < info_.joints.size(); i++) {
     joint_ids_[i] = std::stoi(info_.joints[i].parameters.at("id"));
@@ -83,7 +83,7 @@ CallbackReturn DynamixelHardware::on_init(const hardware_interface::HardwareInfo
 
     joints_[i].reboot_command = 0.0;
 
-    RCLCPP_INFO(...);
+    // RCLCPP_INFO(...);
   }
 
   if (
@@ -197,16 +197,14 @@ CallbackReturn DynamixelHardware::on_init(const hardware_interface::HardwareInfo
 
 void DynamixelHardware::enable_watchdog()
 {
-  for (size_t i = 0; i < info_.joints.size(); ++i)
-  {
+  for (size_t i = 0; i < info_.joints.size(); ++i) {
     const hardware_interface::ComponentInfo & joint = info_.joints[i];
     const int id = joint_ids_[i];
     const char * log = nullptr;
 
     int watchdog_ms = kWatchdogDefaultMs;
     const auto param_it = joint.parameters.find("bus_watchdog");
-    if (param_it != joint.parameters.end())
-    {
+    if (param_it != joint.parameters.end()) {
       watchdog_ms = std::stoi(param_it->second);
     }
 
@@ -217,16 +215,13 @@ void DynamixelHardware::enable_watchdog()
     );
 
     bool write_ok = dynamixel_workbench_.itemWrite(id, kWatchdogItemName, watchdog_value, &log);
-    if (!write_ok)
-    {
+    if (!write_ok) {
       RCLCPP_WARN(
         rclcpp::get_logger(kDynamixelHardware),
         "Failed to set %s for joint %d (requested: %d ms → reg %d): %s",
         kWatchdogItemName, id, watchdog_ms, watchdog_value, log
       );
-    }
-    else
-    {
+    } else {
       RCLCPP_INFO(
         rclcpp::get_logger(kDynamixelHardware),
         "%s configured for joint %d: %d ms (register value: %d)",
@@ -236,16 +231,13 @@ void DynamixelHardware::enable_watchdog()
 
     int32_t read_val = 0;
     bool read_ok = dynamixel_workbench_.itemRead(id, kWatchdogItemName, &read_val, &log);
-    if (read_ok)
-    {
+    if (read_ok) {
       RCLCPP_INFO(
         rclcpp::get_logger(kDynamixelHardware),
         "Confirmed %s for joint %d: %d (≈ %d ms)",
         kWatchdogItemName, id, read_val, read_val * kWatchdogRegisterUnitMs
       );
-    }
-    else
-    {
+    } else {
       RCLCPP_WARN(
         rclcpp::get_logger(kDynamixelHardware),
         "Could not read back %s for joint %d: %s",
@@ -289,6 +281,42 @@ return_type DynamixelHardware::reboot(const uint8_t id)
     rclcpp::get_logger(kDynamixelHardware),
     "Dynamixel ID %u rebooted successfully",
     id);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(600));
+
+  dynamixel_workbench_.torqueOff(id, &log);
+
+  for (uint i = 0; i < info_.joints.size(); ++i) {
+    if (joint_ids_[i] == id) {
+      for (auto paramName : kExtraJointParameters) {
+        if (info_.joints[i].parameters.find(paramName) != info_.joints[i].parameters.end()) {
+          auto value = std::stoi(info_.joints[i].parameters.at(paramName));
+          if (!dynamixel_workbench_.itemWrite(joint_ids_[i], paramName, value, &log)) {
+            RCLCPP_WARN(
+              rclcpp::get_logger(kDynamixelHardware),
+              "Failed to set %s for joint %u after reboot: %s",
+              paramName, id, log != nullptr ? log : "unknown");
+          }
+        }
+      }
+    }
+  }
+
+  if (!dynamixel_workbench_.torqueOn(id, &log)) {
+    RCLCPP_ERROR(
+      rclcpp::get_logger(kDynamixelHardware),
+      "Failed to re-enable torque for ID %u after reboot: %s",
+      id,
+      log != nullptr ? log : "unknown error");
+    return return_type::ERROR;
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger(kDynamixelHardware),
+    "Motor ID %u successfully recovered, configured, and torque enabled",
+    id);
+
+  reset_command();
 
   return return_type::OK;
 }
@@ -585,7 +613,9 @@ return_type DynamixelHardware::set_control_mode(const ControlMode & mode, const 
     return return_type::OK;
   }
 
-  if (mode == ControlMode::ExtendedPosition && (force_set || control_mode_ != ControlMode::ExtendedPosition)) {
+  if (mode == ControlMode::ExtendedPosition &&
+    (force_set || control_mode_ != ControlMode::ExtendedPosition))
+  {
     bool torque_enabled = torque_enabled_;
     if (torque_enabled) {
       enable_torque(false);
