@@ -1,0 +1,19 @@
+services:
+  dynamixel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: dynamixel_hardware
+
+    stdin_open: true
+    tty: true
+
+    volumes:
+      - ./dynamixel_hardware:/ros2_ws/src/dynamixel_hardware
+      - ./open_manipulator_x_description:/ros2_ws/src/open_manipulator_x_description
+      - ./pantilt_bot_description:/ros2_ws/src/pantilt_bot_description
+
+    working_dir: /ros2_ws
+
+    command: bash

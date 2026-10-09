@@ -45,6 +45,7 @@ struct Joint
   JointValue state{};
   JointValue command{};
   JointValue prev_command{};
+  double reboot_command{0.0};
 };
 
 enum class ControlMode
@@ -69,6 +70,12 @@ public:
 
   DYNAMIXEL_HARDWARE_PUBLIC
   void enable_watchdog();
+
+  DYNAMIXEL_HARDWARE_PUBLIC
+  return_type reboot(const uint8_t id);
+
+  DYNAMIXEL_HARDWARE_PUBLIC
+  return_type reboot_all();
 
   DYNAMIXEL_HARDWARE_PUBLIC
   std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
@@ -103,6 +110,7 @@ private:
   std::map<const char * const, const ControlItem *> control_items_;
   std::vector<Joint> joints_;
   std::vector<uint8_t> joint_ids_;
+  std::vector<bool> reboot_command_active_;
   bool torque_enabled_{false};
   ControlMode control_mode_{ControlMode::Position};
   bool mode_changed_{false};
